@@ -71,9 +71,6 @@ def ansible_playbook_macro(
         **kwargs
     )
 
-def _ansible_package_impl(ctx):
-    fail("Not implemented!")
-
 def _ansible_playbook_impl(ctx):
     deps = extract_ansible_info_deps(
         [info[AnsibleInfo] for info in ctx.attr.deps],
