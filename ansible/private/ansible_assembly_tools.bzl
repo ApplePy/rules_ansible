@@ -1,8 +1,44 @@
 """A collection of reusable functions to help build Ansible outputs."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load(
+    ":ansibleinfo.bzl",
+    "ANSIBLE_ROLE_STRUCT_INTERNAL_KEYS",
+    "extract_ansible_role_structs",
+)
 
 visibility(["private"])
+
+def place_ansible_roles(ctx, role_depsets):
+    """Generates symlinks for Ansible roles for packaging.
+
+    Args:
+        ctx: Context of the calling rule.
+        role_depsets: a list of depsets containing role structs.
+
+    Returns:
+      An array of file actions that create the desired directory structure.
+    """
+    flattened_roles = depset(transitive = role_depsets).to_list()
+    deps = extract_ansible_role_structs(flattened_roles)
+    placed_files = []
+
+    for path, struct in deps.items():
+        for key, value in struct.items():
+            if key in ANSIBLE_ROLE_STRUCT_INTERNAL_KEYS:
+                continue
+            name = struct["name"]
+            placed_files += place_ansible_files(
+                ctx,
+                value.to_list(),
+                src_root = path,
+                dst_folder_relative_root = paths.join("roles", name),
+                dst_subfolder = key,
+                # Add to the rule top collection instead of in a subdirectory.
+                full_path_symlinks_root = ".",
+                include_full_path_symlinks = True,
+            )
+    return placed_files
 
 def place_ansible_files(
         ctx,
@@ -12,7 +48,7 @@ def place_ansible_files(
         dst_folder_relative_root = ".",
         dst_subfolder = ".",
         include_full_path_symlinks = True,
-        place_full_path_symlinks_at_root = True,
+        full_path_symlinks_root = None,
         include_relative_path_symlinks = True):
     """Generates symlinks for the Ansible files to put them in the correct dirs.
 
@@ -20,10 +56,10 @@ def place_ansible_files(
       ctx: Context of the calling rule.
       files: The files that need to be placed in their correct directories.
       src_root: The files' original root directory - for generating relative symlinks.
-      dst_folder_relative_root: Where symlinks should be placed.
-      dst_subfolder: A subfolder in the destination folder where these files should be placed (i.e. tasks/).
+      dst_folder_relative_root: Where symlinks should be placed. Defaults to the current package.
+      dst_subfolder: A subfolder in the destination folder where these files should be placed (i.e. tasks/). Defaults to the current package.
       include_full_path_symlinks: Should a view of the source directory tree be symlinked in.
-      place_full_path_symlinks_at_root: Should the full-path symlinks be placed at the relative root instead of the the subfolder.
+      full_path_symlinks_root: The directory where full-path symlinks should be placed. Defaults to dst_folder_relative_root.
       include_relative_path_symlinks: Should child files to this package get symlinked into their original locations.
 
     Returns:
@@ -32,14 +68,16 @@ def place_ansible_files(
     if src_root == None:
         src_root = ctx.label.package
 
+    if full_path_symlinks_root == None:
+        full_path_symlinks_root = dst_folder_relative_root
+
     outs = []
     for file in files:
         if include_full_path_symlinks:
             # Copy fully-qualified path for fully-qualified accesses.
             sym_path = paths.normalize(
                 paths.join(
-                    dst_folder_relative_root,
-                    dst_subfolder if not place_full_path_symlinks_at_root else '',
+                    full_path_symlinks_root,
                     file.short_path,
                 ),
             )

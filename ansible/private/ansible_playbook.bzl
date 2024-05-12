@@ -1,6 +1,5 @@
 """Rules to define and package an Ansible role."""
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
     "@rules_pkg//:mappings.bzl",
     "pkg_files",
@@ -11,15 +10,15 @@ load(
     "pkg_tar",
     "pkg_zip",
 )
-load(":ansible_assembly_tools.bzl", "place_ansible_files")
+load(
+    ":ansible_assembly_tools.bzl",
+    "place_ansible_files",
+    "place_ansible_roles",
+)
 load(
     ":ansibleinfo.bzl",
-    "ANSIBLE_ROLE_STRUCT_INTERNAL_KEYS",
-    "ANSIBLE_ROLE_TYPES",
     "AnsibleInfo",
     "extract_ansible_info_deps",
-    "extract_ansible_role_structs",
-    _create_role_struct = "create_role_struct",
     _new_ansibleinfo = "new_ansibleinfo",
 )
 
@@ -72,36 +71,6 @@ def ansible_playbook_macro(
         **kwargs
     )
 
-def _place_ansible_roles(ctx, role_depsets):
-    flattened_roles = depset(transitive = role_depsets).to_list()
-    deps = extract_ansible_role_structs(flattened_roles)
-    placed_files = []
-
-    for path, struct in deps.items():
-        for key, value in struct.items():
-            if key in ANSIBLE_ROLE_STRUCT_INTERNAL_KEYS:
-                continue
-            name = struct["name"]
-
-            # Supports relative roles
-            placed_files += place_ansible_files(
-                ctx,
-                value.to_list(),
-                src_root = path,
-                dst_folder_relative_root = paths.join("roles", name),
-                dst_subfolder = key,
-            )
-
-            # Supports roles called by absolute-ish path
-            placed_files += place_ansible_files(
-                ctx,
-                value.to_list(),
-                src_root = path,
-                dst_folder_relative_root = paths.join("roles", path),
-                dst_subfolder = key,
-            )
-    return placed_files
-
 def _ansible_package_impl(ctx):
     fail("Not implemented!")
 
@@ -113,8 +82,11 @@ def _ansible_playbook_impl(ctx):
     placed_files = []
     for key, value in deps.items():
         if key == "roles":
-            placed_files += _place_ansible_roles(ctx, value)
+            placed_files += place_ansible_roles(ctx, value)
         else:
+            if key == "modules":
+                # modules are stored in a 'library' folder instead.
+                key = "library"
             placed_files += place_ansible_files(
                 ctx,
                 depset(transitive = value).to_list(),
@@ -125,12 +97,15 @@ def _ansible_playbook_impl(ctx):
     placed_files += place_ansible_files(
         ctx,
         ctx.files.src,
+        # Don't need to symlink this into the full path directory - it shouldn't
+        # be called from there.
         include_full_path_symlinks = False,
     )
 
     placed_files += place_ansible_files(
         ctx,
         ctx.files.files,
+        include_full_path_symlinks = True,
     )
 
     runfiles = ctx.runfiles(files = placed_files)
@@ -144,7 +119,11 @@ def _ansible_playbook_impl(ctx):
         substitutions = substitutions,
         is_executable = True,
     )
-    return [DefaultInfo(executable = exec_file, runfiles = runfiles, files = depset(direct = placed_files)), _new_ansibleinfo()]
+    return [DefaultInfo(
+        executable = exec_file,
+        runfiles = runfiles,
+        files = depset(direct = placed_files),
+    ), _new_ansibleinfo()]
 
 ansible_playbook = rule(
     implementation = _ansible_playbook_impl,
