@@ -12,6 +12,7 @@ def place_ansible_files(
         dst_folder_relative_root = ".",
         dst_subfolder = ".",
         include_full_path_symlinks = True,
+        place_full_path_symlinks_at_root = True,
         include_relative_path_symlinks = True):
     """Generates symlinks for the Ansible files to put them in the correct dirs.
 
@@ -22,6 +23,7 @@ def place_ansible_files(
       dst_folder_relative_root: Where symlinks should be placed.
       dst_subfolder: A subfolder in the destination folder where these files should be placed (i.e. tasks/).
       include_full_path_symlinks: Should a view of the source directory tree be symlinked in.
+      place_full_path_symlinks_at_root: Should the full-path symlinks be placed at the relative root instead of the the subfolder.
       include_relative_path_symlinks: Should child files to this package get symlinked into their original locations.
 
     Returns:
@@ -37,7 +39,7 @@ def place_ansible_files(
             sym_path = paths.normalize(
                 paths.join(
                     dst_folder_relative_root,
-                    dst_subfolder,
+                    dst_subfolder if not place_full_path_symlinks_at_root else '',
                     file.short_path,
                 ),
             )
