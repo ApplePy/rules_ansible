@@ -32,6 +32,20 @@ ANSIBLE_ROLE_STRUCT_INTERNAL_KEYS = [
 ]
 
 def extract_ansible_role_structs(ansible_role_structs):
+    """Given a list of AnsibleInfoRole structs, a filesystem path-keyed dict.
+
+    When a list of AnsibleInfo structs are returned, the resulting dict will
+    consist of keys matching the workspace-relative path of each role, and the
+    value for each key is another dict where the key-value pairs are match the
+    attributes from the corresponding role struct (which is currently a depset).
+
+    This allows native iteration syntax to work.
+
+    Args:
+      ansible_role_structs: A list of AnsibleRole structs to collect the depsets
+        from for merging.
+    """
+
     # Role structs do not have nested roles.
     keys = [x for x in ANSIBLE_INFO_TYPES + ANSIBLE_ROLE_TYPES + ANSIBLE_ROLE_STRUCT_INTERNAL_KEYS if x != "roles"]
 
@@ -44,6 +58,17 @@ def extract_ansible_role_structs(ansible_role_structs):
     }
 
 def extract_ansible_info_deps(ansible_infos):
+    """Given a list of AnsibleInfo structs, creates a merged dict.
+
+    When a list of AnsibleInfo structs are returned, the resulting dict will
+    consist of keys matching the attributes on AnsibleInfo structs, and the
+    value for each key is a flat list of the value from each AnsibleInfo for
+    that attribute (which is currently a depset).
+
+    Args:
+      ansible_infos: A list of AnsibleInfo structs to collect the depsets from
+       for merging.
+    """
     return {
         key: [
             getattr(info, key) if getattr(info, key) != None else []

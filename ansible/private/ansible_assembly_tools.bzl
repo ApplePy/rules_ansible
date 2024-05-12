@@ -1,3 +1,5 @@
+"""A collection of reusable functions to help build Ansible outputs."""
+
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 visibility(["private"])
@@ -19,7 +21,7 @@ def place_ansible_files(
       src_root: The files' original root directory - for generating relative symlinks.
       dst_folder_relative_root: Where symlinks should be placed.
       dst_subfolder: A subfolder in the destination folder where these files should be placed (i.e. tasks/).
-      include_full_path_symlinks: Should a view of the directory tree be symlinked in.
+      include_full_path_symlinks: Should a view of the source directory tree be symlinked in.
       include_relative_path_symlinks: Should child files to this package get symlinked into their original locations.
 
     Returns:
