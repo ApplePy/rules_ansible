@@ -132,6 +132,9 @@ def _ansible_role_files_impl(ctx):
         # Ignore roles since we're not packaging up roles we depend on.
         if key == "roles":
             continue
+        if key == "modules":
+            # modules are stored in a 'library' folder instead for roles.
+            key = "library"
         placed_files += place_ansible_files(
             ctx,
             depset(transitive = value).to_list(),
