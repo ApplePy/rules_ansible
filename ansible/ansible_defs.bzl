@@ -1,3 +1,5 @@
+"""Exported definitions for Ansible rules."""
+
 load(
     "//ansible/private:ansible_module.bzl",
     _ansible_module = "ansible_module",
