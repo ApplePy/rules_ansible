@@ -1,6 +1,6 @@
 {
   "lockFileVersion": 6,
-  "moduleFileHash": "9f5a1fc42c5e3362b0c1bfbcb0d62adc1a25c1e61719a57b3d746311170780f2",
+  "moduleFileHash": "13db19f29969e65ff58cd193da71eaecde526e72cd6cec9af05d0467ee7b086b",
   "flags": {
     "cmdRegistries": [
       "https://bcr.bazel.build/"
@@ -17,10 +17,10 @@
   },
   "moduleDepGraph": {
     "<root>": {
-      "name": "",
-      "version": "",
+      "name": "rules_ansible",
+      "version": "0.1",
       "key": "<root>",
-      "repoName": "",
+      "repoName": "rules_ansible",
       "executionPlatformsToRegister": [],
       "toolchainsToRegister": [],
       "extensionUsages": [],
